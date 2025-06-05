@@ -3,90 +3,102 @@
 import { Dispatch, SetStateAction } from 'react';
 import { DragDropContext, Droppable } from 'react-beautiful-dnd';
 import TaskColumn from './TaskColumn';
-
-export type Task = {
-  id: string;
-  title: string;
-  description: string;
-  status: 'todo' | 'in-progress' | 'done';
-  createdAt: Date;
-};
+import { useTasks } from '@/lib/TaskContext';
+import type { Task } from '../page';
 
 interface TaskBoardProps {
   tasks: Task[];
   setTasks: Dispatch<SetStateAction<Task[]>>;
+  
 }
 
 export default function TaskBoard({ tasks, setTasks }: TaskBoardProps) {
+  const { updateTask } = useTasks();
+
   const columns = {
     todo: tasks.filter((task) => task.status === 'todo'),
     'in-progress': tasks.filter((task) => task.status === 'in-progress'),
     done: tasks.filter((task) => task.status === 'done'),
   };
 
-  const onDragEnd = (result: any) => {
+  const onDragEnd = async (result: any) => {
     if (!result.destination) return;
 
     const { source, destination } = result;
-    
+
     if (source.droppableId === destination.droppableId) {
-      // Reordering within the same column
       const column = columns[source.droppableId as keyof typeof columns];
       const copiedItems = [...column];
       const [removed] = copiedItems.splice(source.index, 1);
       copiedItems.splice(destination.index, 0, removed);
-      
-      setTasks((prevTasks) => {
-        const otherTasks = prevTasks.filter(
-          (task) => task.status !== source.droppableId
-        );
-        return [...otherTasks, ...copiedItems];
+
+      setTasks((prev) => {
+        const others = prev.filter((task) => task.status !== source.droppableId);
+        return [...others, ...copiedItems];
       });
     } else {
-      // Moving between columns
-      const sourceColumn = columns[source.droppableId as keyof typeof columns];
-      const destColumn = columns[destination.droppableId as keyof typeof columns];
-      const sourceItems = [...sourceColumn];
-      const destItems = [...destColumn];
+      const sourceCol = columns[source.droppableId as keyof typeof columns];
+      const destCol = columns[destination.droppableId as keyof typeof columns];
+      const sourceItems = [...sourceCol];
+      const destItems = [...destCol];
       const [removed] = sourceItems.splice(source.index, 1);
-      destItems.splice(destination.index, 0, {
-        ...removed,
-        status: destination.droppableId as Task['status'],
+      const updatedTask = { ...removed, status: destination.droppableId as Task['status'] };
+      destItems.splice(destination.index, 0, updatedTask);
+
+      setTasks((prev) => {
+        const others = prev.filter(
+          (task) =>
+            task.status !== source.droppableId && task.status !== destination.droppableId
+        );
+        return [...others, ...sourceItems, ...destItems];
       });
 
-      setTasks((prevTasks) => {
-        const otherTasks = prevTasks.filter(
-          (task) =>
-            task.status !== source.droppableId &&
-            task.status !== destination.droppableId
-        );
-        return [...otherTasks, ...sourceItems, ...destItems];
-      });
+      try {
+        await updateTask(removed._id, { status: destination.droppableId });
+      } catch (err) {
+        console.error('Failed to update task status:', err);
+        setTasks((prev) => {
+          const others = prev.filter(
+            (task) =>
+              task.status !== source.droppableId && task.status !== destination.droppableId
+          );
+          return [...others, ...sourceCol, ...destCol];
+        });
+      }
     }
   };
 
   return (
-    <div className="p-8 min-h-screen bg-gray-50">
-      <h1 className="text-3xl font-bold mb-8 text-gray-800">Task Board</h1>
+    <div className="space-y-6 rounded-xl border border-border bg-card/30 backdrop-blur-sm p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl  text-muted-foreground ">Organize and prioritize your tasks with drag-and-drop ease.</h1>
+          {/* <p className="text-muted-foreground mt-1">Organize and prioritize your tasks with drag-and-drop ease.</p> */}
+        </div>
+      </div>
+
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <TaskColumn
-            title="To Do"
+            title="📝 To Do"
             tasks={columns.todo}
             status="todo"
+            color="border-yellow-500/20 bg-yellow-500/5"
           />
           <TaskColumn
-            title="In Progress"
+            title="🚧 In Progress"
             tasks={columns['in-progress']}
             status="in-progress"
+            color="border-blue-500/20 bg-blue-500/5"
           />
           <TaskColumn
-            title="Done"
+            title="✅ Done"
             tasks={columns.done}
             status="done"
+            color="border-green-500/20 bg-green-500/5"
           />
         </div>
       </DragDropContext>
     </div>
   );
-} 
+}
