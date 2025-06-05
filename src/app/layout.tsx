@@ -2,6 +2,13 @@ import './globals.css';
 import { Web3Provider } from '@/lib/Web3Context';
 import { TaskProvider } from '@/lib/TaskContext';
 import Navbar from '@/components/Navbar';
+import { Geist_Mono } from 'next/font/google'
+
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-geist-mono',
+})
 
 export const metadata = {
   title: 'Task Board',
@@ -14,8 +21,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="font-mono bg-background text-foreground antialiased">
+    <html lang="en" className={`${geistMono.variable} dark`}>
+      <body className="min-h-screen bg-background font-mono antialiased">
         <Web3Provider>
           <TaskProvider>
             <Navbar />
