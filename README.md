@@ -2,7 +2,8 @@
 
 A modern, decentralized task management application built with Next.js, Web3, and Tailwind CSS. This application allows users to manage their tasks using their Ethereum wallet, providing a secure and decentralized way to track and organize tasks.
 
-![Task Board Screenshot](screenshot.png)
+![image](https://github.com/user-attachments/assets/2439d224-b821-4627-bbf9-baf99924d8d2)
+
 
 ## Features
 
